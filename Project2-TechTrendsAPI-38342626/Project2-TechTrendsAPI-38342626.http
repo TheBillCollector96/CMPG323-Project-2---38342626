@@ -1,0 +1,6 @@
+@Project2_TechTrendsAPI_38342626_HostAddress = http://localhost:5109
+
+GET {{Project2_TechTrendsAPI_38342626_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
