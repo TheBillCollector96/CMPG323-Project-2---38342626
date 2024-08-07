@@ -23,16 +23,7 @@ namespace Project2_TechTrendsAPI_38342626.Controllers
         // Private method to check if a Telementry Entry exist
         private async Task<bool> JobTelemetryExist(int id)
         {
-            var jobTelemetry = await _context.JobTelemetries.FindAsync(id);
-            if (jobTelemetry == null)
-            { 
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-            //return await _context.JobTelemetries.AnyAsync(t => t.Id == id);
+            return await _context.JobTelemetries.AnyAsync(t => t.Id == id);
         }
 
         // GET: api/JobTelemetries
@@ -122,6 +113,54 @@ namespace Project2_TechTrendsAPI_38342626.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpGet("GetSavings")]
+        public async Task<IActionResult> GetSavings(Guid projectId, DateTime startDate, DateTime endDate)
+        {
+            // Fetch project data based on project ID given by parameter
+            var project = await _context.Projects.FindAsync(projectId);
+
+            //Input Validation
+            if (project == null)
+            {
+                return NotFound(new { message = $"The Project with ID {projectId} not found." });
+            }
+
+            if (project.ProjectCreationDate <= startDate || project.ProjectCreationDate >= endDate)
+            {
+                return BadRequest();
+            }
+
+            // Fetch process data based on project ID -> Process (PK), Project (FK)
+            var process = await _context.Processes.FirstOrDefaultAsync(p => p.ProjectId == project.ProjectId);
+            if (process == null)
+            {
+                return BadRequest();
+            }
+
+            // Fetch telemetry data based on process ID -> Telemetry (FK), Process (PK)
+            var telemetry = await _context.Processes.FirstOrDefaultAsync(p => p.ProcessId == process.ProcessId);
+            if (telemetry == null)
+            {
+                return BadRequest();
+            }
+
+            // Calculate cumulative time and cost saved
+            int days = endDate.DayOfYear - project.ProjectCreationDate.Value.DayOfYear;
+
+            var totalTime = days * 24;
+            var totalCostSaved = totalTime * 0.2;
+
+            // Create a response object inline
+            var response = new
+            {
+                TotalTimeSaved = totalTime,
+                TotalCostSaved = totalCostSaved
+            };
+
+            // Return the result as JSON
+            return Ok(response);
         }
 
         private bool JobTelemetryExists(int id)
