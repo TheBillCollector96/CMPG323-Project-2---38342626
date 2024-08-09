@@ -33,6 +33,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<BasicAuthenticationHandler>("Test");
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
