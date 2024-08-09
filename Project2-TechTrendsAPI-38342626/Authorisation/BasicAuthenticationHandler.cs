@@ -3,61 +3,48 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Http;
 
 namespace Project2_TechTrendsAPI_38342626.Authorisation
 {
-    public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    public class BasicAuthenticationHandler 
     {
-        public BasicAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock)
-        {
+        private readonly RequestDelegate next;
+        private readonly string relm;
 
+        public BasicAuthenticationHandler(RequestDelegate next, string relm)
+        {
+            this.next = next;
+            this.relm = relm;
         }
 
-        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+        public async Task InvokeAsync(HttpContext context)
         {
-            //Input Validation
-            if (!Request.Headers.ContainsKey("Authorization"))
+            if (!context.Request.Headers.ContainsKey("Authorization"))
             {
-                return AuthenticateResult.Fail("Unauthorized");
+                context.Response.StatusCode = 401;
+                await context.Response.WriteAsync("Unauthorized");
+                return;
             }
 
-            string authorizationHeader = Request.Headers["Authorization"];
-            if (string.IsNullOrEmpty(authorizationHeader))
+            //Basic userId:password
+            var header = context.Request.Headers["Authorization"].ToString();
+            var encodedCreds = header.Substring(6);
+            var creds = Encoding.UTF8.GetString(Convert.FromBase64String(encodedCreds));
+
+            string[] uidpwd = creds.Split(':');
+            var uid = uidpwd[0];
+            var password = uidpwd[1];
+
+            if(uid != "NWUTechTrendsAPI" || password != "password")
             {
-                return AuthenticateResult.Fail("Unauthorized");
+                context.Response.StatusCode = 401;
+                await context.Response.WriteAsync("Unauthorized");
+                return;
             }
 
-            if (!authorizationHeader.StartsWith("basic ", StringComparison.OrdinalIgnoreCase))
-            {
-                return AuthenticateResult.Fail("Unauthorized");
-            }
+            await next(context);
 
-            var token = authorizationHeader.Substring(6);
-            var credentialAsString = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-
-            var credentials = credentialAsString.Split(':');
-            if (credentials?.Length != 2)
-            {
-                return AuthenticateResult.Fail("Unauthorized");
-            }
-
-            var username = credentials[0];
-            var password = credentials[1];
-
-            //Credential Validation
-            if (username != "username" && password != "password")
-            {
-                return AuthenticateResult.Fail("Unauthorized");
-            }
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, username),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var identity = new ClaimsIdentity(claims, "Basic");
-            var claimsPrincipal = new ClaimsPrincipal(identity);
-            return AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name));
         }
     }
 }
