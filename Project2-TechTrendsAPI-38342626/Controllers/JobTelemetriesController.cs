@@ -164,6 +164,7 @@ namespace Project2_TechTrendsAPI_38342626.Controllers
             // Return the result as JSON
             return Ok(response);
         }
+
         /*
         [Authorize]
         [HttpGet("auth", Name = "AuthStatus")]
