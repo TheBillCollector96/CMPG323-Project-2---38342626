@@ -7,15 +7,18 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
+using Project2_TechTrendsAPI_38342626.Authentication;
 using Project2_TechTrendsAPI_38342626.Models;
 
 namespace Project2_TechTrendsAPI_38342626.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class JobTelemetriesController : ControllerBase
     {
         private readonly NWUTechTrendsContext _context;
+        //private readonly BasicAuthenticationHandler _authenticationHandler;
 
         public JobTelemetriesController(NWUTechTrendsContext context)
         {
@@ -165,24 +168,25 @@ namespace Project2_TechTrendsAPI_38342626.Controllers
             return Ok(response);
         }
 
-        /*
-        [Authorize]
-        [HttpGet("auth", Name = "AuthStatus")]
-        public ActionResult AuthStatus()
+        /*[AllowAnonymous]
+        [HttpPost("Authirize")]
+        public IActionResult AuthUser([FromBody] User user)
         {
-            //If it gets here, then the authorisation process is working
-            var response = new
-            {
-                Message = "Auth is up!",
-                ServerTime = DateTime.Now
-            };
+            var token = AuthenticationHandler.Authenticate(user.username, user.password);
+            if (token == null) return Unauthorized();
 
-            return Ok(response);
-        }
-        */
+            return Ok(token);
+        }*/
+
         private bool JobTelemetryExists(int id)
         {
             return _context.JobTelemetries.Any(e => e.Id == id);
         }
+    }
+
+    public class User
+    {
+        public string username { get; set; }
+        public string password { get; set; }
     }
 }
