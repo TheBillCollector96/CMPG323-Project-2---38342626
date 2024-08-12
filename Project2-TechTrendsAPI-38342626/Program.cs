@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Project2_TechTrendsAPI_38342626;
 using Project2_TechTrendsAPI_38342626.Models;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using Project2_TechTrendsAPI_38342626.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,18 +23,18 @@ builder.Services.AddDbContext<NWUTechTrendsContext> (options => options.UseSqlSe
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "NWUTechTrends", Version = "v1" });
+    c.AddSecurityDefinition("basic", new OpenApiSecurityScheme
     {
-        Name = "Authentication",
-        Description = "Enter the NWUTechTrends Authentication Key : 'Bearer Generated-JWT-Token'",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "basic",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "NWUTechTrends"
+        Description = "Basic Authorization header."
     });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -39,12 +42,19 @@ builder.Services.AddSwaggerGen(options =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = JwtBearerDefaults.AuthenticationScheme
+                    Id = "basic"
                 }
-            }, new string [] {}
+            },
+            new string[] {}
         }
     });
 });
+
+////////////
+
+builder.Services.AddAuthentication("BasicAuthentication")
+    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+///////
 
 //builder.Services.AddAuthorization().AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
@@ -60,6 +70,8 @@ if (app.Environment.IsDevelopment())
 //app.UseMiddleware<BasicAuthenticationHandler>("Test");
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
